@@ -95,7 +95,6 @@ function complexity(filePath) {
     fileBuilder.FileName = filePath;
     fileBuilder.ImportCount = 0;
     builders[filePath] = fileBuilder;
-    findComparisons(ast.body[0]);
     var allComparisions = (function () {
         var count = 0;
         for (let node of ast.body) {
@@ -104,7 +103,7 @@ function complexity(filePath) {
         return count;
     })();
     console.log(allComparisions);
-    // Tranverse program with a function visitor.
+    //Tranverse program with a function visitor.
     traverseWithParents(ast, function (node) {
         if (node.type === 'FunctionDeclaration') {
             var builder = new FunctionBuilder();
@@ -163,20 +162,18 @@ function findComparisons(node) {
     var count = 0;
     var key, child;
     for (key in node) {
-        if (node.hasOwnProperty(key)) {
-            if (key != 'range' && key != 'loc' && key != 'line') {
-                child = node[key];
-                if (typeof child === 'object' && child !== null && key != 'parent') {
-                    count += findComparisons(child);
-                }
-                else if (child === 'BinaryExpression') {
-                    count++;
-                    return count;
-                }
-                else if (child === 'BlockStatement') {
-                    for (let inNode of node[body]) {
-                        count += findComparisons(inNode);
-                    }
+        if (key !== 'range' && key !== 'loc' && key !== 'line') {
+            child = node[key];
+            if (typeof child === 'object' && child !== null && key != 'parent') {
+                count += findComparisons(child);
+            }
+            else if (child === 'BinaryExpression') {
+                count++;
+                return count;
+            }
+            else if (child === 'BlockStatement') {
+                for (let inNode of node['body']) {
+                    count += findComparisons(inNode[0]);
                 }
             }
         }
