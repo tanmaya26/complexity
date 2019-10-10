@@ -10,7 +10,7 @@ var fs = require("fs");
 function main() {
     var args = process.argv.slice(2);
     if (args.length == 0) {
-        args = ["analysis.js"];
+        args = ["apple.js"];
     }
     var filePath = args[0];
     complexity(filePath);
@@ -36,7 +36,7 @@ function FunctionBuilder() {
     // The max number of conditions if one decision statement.
     this.MaxConditions = 0;
 
-    this.report = function() {
+    this.report = function () {
         console.log(
             (
                 "{0}(): {1}\n" +
@@ -46,9 +46,9 @@ function FunctionBuilder() {
                 "MaxConditions: {4}\t" +
                 "Parameters: {5}\n\n"
             )
-            .format(this.FunctionName, this.StartLine,
-                this.SimpleCyclomaticComplexity, this.MaxNestingDepth,
-                this.MaxConditions, this.ParameterCount)
+                .format(this.FunctionName, this.StartLine,
+                    this.SimpleCyclomaticComplexity, this.MaxNestingDepth,
+                    this.MaxConditions, this.ParameterCount)
         );
     }
 };
@@ -61,7 +61,7 @@ function FileBuilder() {
     // Number of imports in a file.
     this.ImportCount = 0;
 
-    this.report = function() {
+    this.report = function () {
         console.log(
             ("{0}\n" +
                 "~~~~~~~~~~~~\n" +
@@ -86,7 +86,6 @@ function traverseWithParents(object, visitor) {
     }
 }
 
-
 function complexity(filePath) {
     var buf = fs.readFileSync(filePath, "utf8");
     var ast = esprima.parse(buf, options);
@@ -96,9 +95,17 @@ function complexity(filePath) {
     fileBuilder.FileName = filePath;
     fileBuilder.ImportCount = 0;
     builders[filePath] = fileBuilder;
-
+    findComparisons(ast.body[0]);
+    var allComparisions = (function () {
+        var count = 0;
+        for (let node of ast.body) {
+            count += findComparisons(node);
+        }
+        return count;
+    })();
+    console.log(allComparisions);
     // Tranverse program with a function visitor.
-    traverseWithParents(ast, function(node) {
+    traverseWithParents(ast, function (node) {
         if (node.type === 'FunctionDeclaration') {
             var builder = new FunctionBuilder();
             builder.FunctionName = functionName(node);
@@ -106,20 +113,20 @@ function complexity(filePath) {
             builder.ParameterCount = node.params.length;
             var funcBody = node.body.body
             //if (node.id.name == 'apple') {
-                builder.SimpleCyclomaticComplexity = (function() {
-                    var count = 0;
-                    for (let dict of funcBody) {
-                        count += conditionals(dict);
-                    }
-                    return count;
-                })();
+            builder.SimpleCyclomaticComplexity = (function () {
+                var count = 0;
+                for (let dict of funcBody) {
+                    count += cyclometricComplexity(dict);
+                }
+                return count;
+            })();
             //}
             builders[builder.FunctionName] = builder;
         }
     });
 }
 
-function conditionals(dict) {
+function cyclometricComplexity(dict) {
     var count = 0;
     if (dict != null) {
         for (var key in dict) {
@@ -128,18 +135,18 @@ function conditionals(dict) {
                 var consequentBody = dict[key].body;
                 if (consequentBody != null) {
                     for (let d of consequentBody) {
-                        count += conditionals(d);
+                        count += cyclometricComplexity(d);
                     }
                 }
             } else if (key === 'alternate') {
-                count += conditionals(dict[key]);
+                count += cyclometricComplexity(dict[key]);
             } else if (key === 'type') {
                 if (dict[key] === 'BlockStatement') {
                     count += 1;
                     var alternateBody = dict.body;
                     if (alternateBody != null) {
                         for (let d of alternateBody) {
-                            count += conditionals(d);
+                            count += cyclometricComplexity(d);
                         }
                     }
                 }
@@ -149,6 +156,31 @@ function conditionals(dict) {
         }
     }
 
+    return count;
+}
+
+function findComparisons(node) {
+    var count = 0;
+    var key, child;
+    for (key in node) {
+        if (node.hasOwnProperty(key)) {
+            if (key != 'range' && key != 'loc' && key != 'line') {
+                child = node[key];
+                if (typeof child === 'object' && child !== null && key != 'parent') {
+                    count += findComparisons(child);
+                }
+                else if (child === 'BinaryExpression') {
+                    count++;
+                    return count;
+                }
+                else if (child === 'BlockStatement') {
+                    for (let inNode of node[body]) {
+                        count += findComparisons(inNode);
+                    }
+                }
+            }
+        }
+    }
     return count;
 }
 
@@ -185,26 +217,11 @@ function functionName(node) {
     return "anon function @" + node.loc.start.line;
 }
 
-function apple(node) {
-    if (j > 2)
-        var f = 0;
-    if (j < 5) {
-
-    } else if (t == 1) {
-        if (g == 0) {} else {}
-    } else {
-        if (g == 1) {} else {}
-        if (v == 0) {} else {
-            if (p == 9) {}
-        }
-    }
-}
-
 // Helper function for allowing parameterized formatting of strings.
 if (!String.prototype.format) {
-    String.prototype.format = function() {
+    String.prototype.format = function () {
         var args = arguments;
-        return this.replace(/{(\d+)}/g, function(match, number) {
+        return this.replace(/{(\d+)}/g, function (match, number) {
             return typeof args[number] != 'undefined' ?
                 args[number] :
                 match;
