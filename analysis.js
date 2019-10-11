@@ -30,25 +30,25 @@ function FunctionBuilder() {
     // The number of parameters for functions
     this.ParameterCount = 0,
         // Number of if statements/loops + 1
-    this.SimpleCyclomaticComplexity = 0;
-    // The max depth of scopes (nested ifs, loops, etc)
-    this.MaxNestingDepth = 0;
+        //this.SimpleCyclomaticComplexity = 0;
+        // The max depth of scopes (nested ifs, loops, etc)
+        this.MaxNestingDepth = 0;
     // The max number of conditions if one decision statement.
     this.MaxConditions = 0;
     this.MaxMessageChains = 0;
+    this.Returns = 0;
     this.report = function () {
         console.log(
             (
                 "{0}(): {1}\n" +
                 "============\n" +
-                "SimpleCyclomaticComplexity: {2}\t" +
-                "MaxMessageChains: {3}\t" +
-                "MaxConditions: {4}\t" +
-                "Parameters: {5}\n\n"
+                "MaxMessageChains: {2}\t" +
+                "MaxConditions: {3}\t" +
+                "Parameters: {4}\n" +
+                "Returns: {5}\n\n"
             )
-                .format(this.FunctionName, this.StartLine,
-                    this.SimpleCyclomaticComplexity, this.MaxMessageChains,
-                    this.MaxConditions, this.ParameterCount)
+                .format(this.FunctionName, this.StartLine, this.MaxMessageChains,
+                    this.MaxConditions, this.ParameterCount, this.Returns)
         );
     }
 };
@@ -60,15 +60,17 @@ function FileBuilder() {
     this.Strings = 0;
     // Number of imports in a file.
     this.ImportCount = 0;
-    this.MaxComparisons = 0;
+    this.AllComparisons = 0;
+    this.SimpleCyclomaticComplexity = 0;
     this.report = function () {
         console.log(
             ("{0}\n" +
                 "~~~~~~~~~~~~\n" +
                 "ImportCount {1}\t" +
-                "AllComparisons {1}\t" +
-                "Strings {2}\n"
-            ).format(this.FileName, this.ImportCount, this.AllComparisons, this.Strings));
+                "AllComparisons {2}\t" +
+                "SimpleCyclomaticComplexity {3}\t" +
+                "Strings {4}\n"
+            ).format(this.FileName, this.ImportCount, this.AllComparisons, this.SimpleCyclomaticComplexity, this.Strings));
     }
 }
 // A function following the Visitor pattern.
@@ -95,6 +97,13 @@ function complexity(filePath) {
     var fileBuilder = new FileBuilder();
     fileBuilder.FileName = filePath;
     fileBuilder.ImportCount = 0;
+    fileBuilder.SimpleCyclomaticComplexity = (function () {
+        var count = 0;
+        for (let node of ast.body) {
+            count += cyclomaticComplexity(node);
+        }
+        return count + 1;
+    })();
     fileBuilder.AllComparisons = (function () {
         var count = 0;
         for (let node of ast.body) {
@@ -103,7 +112,7 @@ function complexity(filePath) {
         return count;
     })();
     builders[filePath] = fileBuilder;
-    
+
     //Tranverse program with a function visitor.
     traverseWithParents(ast, function (node) {
         if (node.type === 'FunctionDeclaration') {
@@ -112,17 +121,17 @@ function complexity(filePath) {
             builder.StartLine = node.loc.start.line;
             builder.ParameterCount = node.params.length;
             var funcBody = node.body.body
-            builder.SimpleCyclomaticComplexity = (function () {
-                var count = 0;
-                for (let node of funcBody) {
-                    count += cyclomaticComplexity(node);
-                }
-                return count+1;
-            })();
             builder.MaxMessageChains = (function () {
                 var count = 0;
                 for (let node of funcBody) {
                     count += findMaxMessageChains(node);
+                }
+                return count;
+            })();
+            builder.Returns = (function () {
+                var count = 0;
+                for (let node of funcBody) {
+                    count += findReturnStatements(node);
                 }
                 return count;
             })();
@@ -195,16 +204,20 @@ function findMaxMessageChains(node) {
     for (key in node) {
         if (key !== 'range' && key !== 'loc' && key !== 'line') {
             child = node[key];
+            if (key === 'object') {
+                count++;
+            }
             if (typeof child === 'object' && child !== null && key != 'parent') {
                 count += findMaxMessageChains(child);
-            }
-            else if (key === 'object') {
-                count++;
-                return count;
             }
         }
     }
     return count;
+}
+
+function findReturnStatements(node) {
+
+
 }
 
 // Helper function for counting children of node.
@@ -212,7 +225,7 @@ function childrenLength(node) {
     var key, child;
     var count = 0;
     for (key in node) {
-        if (node.hasOwnProperty(key)) {
+        if (node.hasOwnßProperty(key)) {
             child = node[key];
             if (typeof child === 'object' && child !== null && key != 'parent') {
                 count++;
