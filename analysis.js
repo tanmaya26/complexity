@@ -30,9 +30,9 @@ function FunctionBuilder() {
     // The number of parameters for functions
     this.ParameterCount = 0,
         // Number of if statements/loops + 1
-        //this.SimpleCyclomaticComplexity = 0;
-        // The max depth of scopes (nested ifs, loops, etc)
-        this.MaxNestingDepth = 0;
+        this.SimpleCyclomaticComplexity = 0;
+    // The max depth of scopes (nested ifs, loops, etc)
+    this.MaxNestingDepth = 0;
     // The max number of conditions if one decision statement.
     this.MaxConditions = 0;
     this.MaxMessageChains = 0;
@@ -61,16 +61,14 @@ function FileBuilder() {
     // Number of imports in a file.
     this.ImportCount = 0;
     this.AllComparisons = 0;
-    this.SimpleCyclomaticComplexity = 0;
     this.report = function () {
         console.log(
             ("{0}\n" +
                 "~~~~~~~~~~~~\n" +
                 "ImportCount {1}\t" +
                 "AllComparisons {2}\t" +
-                "SimpleCyclomaticComplexity {3}\t" +
-                "Strings {4}\n"
-            ).format(this.FileName, this.ImportCount, this.AllComparisons, this.SimpleCyclomaticComplexity, this.Strings));
+                "Strings {3}\n"
+            ).format(this.FileName, this.ImportCount, this.AllComparisons, this.Strings));
     }
 }
 // A function following the Visitor pattern.
@@ -97,13 +95,6 @@ function complexity(filePath) {
     var fileBuilder = new FileBuilder();
     fileBuilder.FileName = filePath;
     fileBuilder.ImportCount = 0;
-    fileBuilder.SimpleCyclomaticComplexity = (function () {
-        var count = 0;
-        for (let node of ast.body) {
-            count += cyclomaticComplexity(node);
-        }
-        return count + 1;
-    })();
     fileBuilder.AllComparisons = (function () {
         var count = 0;
         for (let node of ast.body) {
@@ -115,6 +106,13 @@ function complexity(filePath) {
         var count = 0;
         for (let node of ast.body) {
             count += findLiterals(node);
+        }
+        return count;
+    })();
+    fileBuilder.ImportCount = (function () {
+        var count = 0;
+        for (let node of ast.body) {
+            count += findImports(node);
         }
         return count;
     })();
@@ -142,6 +140,13 @@ function complexity(filePath) {
                 }
                 return count;
             })();
+            builder.SimpleCyclomaticComplexity = (function () {
+                var count = 0;
+                for (let node of funcBody) {
+                    count += cyclomaticComplexity(node);
+                }
+                return count + 1;
+            })();
             builders[builder.FunctionName] = builder;
         }
     });
@@ -149,18 +154,18 @@ function complexity(filePath) {
 
 function cyclomaticComplexity(node) {
     var count = 0;
-    var key, value;
+    var key, child;
     if (node !== null) {
         if (isDecision(node)) {
             count++;
         }
         for (key in node) {
-            value = node[key];
+            child = node[key];
             if (key !== 'range' && key !== 'loc' && key !== 'line' && key !== 'test' && key !== 'init' && key !== 'update' && key !== 'alternate') {
-                if (typeof value === 'object' && value !== null && key != 'parent') {
-                    count += cyclomaticComplexity(value);
+                if (typeof child === 'object' && child !== null && key != 'parent') {
+                    count += cyclomaticComplexity(child);
                 }
-                else if (value === 'BlockStatement') {
+                else if (child === 'BlockStatement') {
                     for (let inNode of node['body']) {
                         count += cyclomaticComplexity(inNode);
                     }
@@ -168,12 +173,12 @@ function cyclomaticComplexity(node) {
                 }
             }
             else if (key === 'alternate') {
-                for (var k in value) {
+                for (var k in child) {
                     if (k === 'consequent') {
-                        count += cyclomaticComplexity(value[k])
+                        count += cyclomaticComplexity(child[k])
                     }
                     if (k === 'alternate') {
-                        count += cyclomaticComplexity(value[k]);
+                        count += cyclomaticComplexity(child[k]);
                     }
                 }
             }
@@ -261,6 +266,26 @@ function findLiterals(node) {
         }
     }
     return count;
+}
+
+function findImports(node) {
+    var count = 0;
+    var key, child;
+    for (key in node) {
+        if (key !== 'range' && key !== 'loc' && key !== 'line') {
+            child = node[key];
+            if (typeof child === 'object' && child !== null && key != 'parent') {
+                count += findImports(child);
+            }
+            if (key === 'callee') {
+                if (child['name'] === 'require') {
+                    count++;
+                }
+            }
+        }
+    }
+    return count;
+
 }
 
 // Helper function for counting children of node.
