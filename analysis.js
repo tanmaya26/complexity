@@ -10,7 +10,7 @@ var fs = require("fs");
 function main() {
     var args = process.argv.slice(2);
     if (args.length == 0) {
-        args = ["apple.js"];
+        args = ["analysis.js"];
     }
     var filePath = args[0];
     complexity(filePath);
@@ -108,6 +108,13 @@ function complexity(filePath) {
         var count = 0;
         for (let node of ast.body) {
             count += findComparisons(node);
+        }
+        return count;
+    })();
+    fileBuilder.Strings = (function () {
+        var count = 0;
+        for (let node of ast.body) {
+            count += findLiterals(node);
         }
         return count;
     })();
@@ -230,6 +237,25 @@ function findReturnStatements(node) {
             else if (child === 'BlockStatement') {
                 for (let inNode of node['body']) {
                     count += findReturnStatements(inNode[0]);
+                }
+            }
+        }
+    }
+    return count;
+}
+
+function findLiterals(node) {
+    var count = 0;
+    var key, child;
+    for (key in node) {
+        if (key !== 'range' && key !== 'loc' && key !== 'line') {
+            child = node[key];
+            if (typeof child === 'object' && child !== null && key != 'parent') {
+                count += findLiterals(child);
+            }
+            if (child === 'Literal') {
+                if (typeof node['value'] === 'string') {
+                    count++;
                 }
             }
         }
