@@ -10,7 +10,7 @@ var fs = require("fs");
 function main() {
     var args = process.argv.slice(2);
     if (args.length == 0) {
-        args = ["analysis.js"];
+        args = ["apple.js"];
     }
     var filePath = args[0];
     complexity(filePath);
@@ -43,12 +43,11 @@ function FunctionBuilder() {
                 "{0}(): {1}\n" +
                 "============\n" +
                 "MaxMessageChains: {2}\t" +
-                "MaxConditions: {3}\t" +
-                "Parameters: {4}\n" +
+                "Parameters: {3}\n" +
+                "SimpleCyclomaticComplexity: {4}\n" +
                 "Returns: {5}\n\n"
             )
-                .format(this.FunctionName, this.StartLine, this.MaxMessageChains,
-                    this.MaxConditions, this.ParameterCount, this.Returns)
+                .format(this.FunctionName, this.StartLine, this.MaxMessageChains, this.ParameterCount, this.SimpleCyclomaticComplexity, this.Returns)
         );
     }
 };
@@ -285,7 +284,6 @@ function findImports(node) {
         }
     }
     return count;
-
 }
 
 // Helper function for counting children of node.
