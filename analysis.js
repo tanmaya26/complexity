@@ -216,8 +216,25 @@ function findMaxMessageChains(node) {
 }
 
 function findReturnStatements(node) {
-
-
+    var count = 0;
+    var key, child;
+    for (key in node) {
+        if (key !== 'range' && key !== 'loc' && key !== 'line') {
+            child = node[key];
+            if (typeof child === 'object' && child !== null && key != 'parent') {
+                count += findReturnStatements(child);
+            }
+            if (child === 'ReturnStatement') {
+                count++;
+            }
+            else if (child === 'BlockStatement') {
+                for (let inNode of node['body']) {
+                    count += findReturnStatements(inNode[0]);
+                }
+            }
+        }
+    }
+    return count;
 }
 
 // Helper function for counting children of node.
