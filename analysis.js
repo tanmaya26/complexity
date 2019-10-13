@@ -164,7 +164,7 @@ function cyclomaticComplexity(node) {
         }
         for (key in node) {
             child = node[key];
-            if (key !== 'range' && key !== 'loc' && key !== 'line' && key !== 'test' && key !== 'init' && key !== 'update' && key !== 'alternate') {
+            if (key !== 'range' && key !== 'loc' && key !== 'line' && key !== 'alternate') {
                 if (typeof child === 'object' && child !== null && key != 'parent') {
                     count += cyclomaticComplexity(child);
                 }
