@@ -10,7 +10,7 @@ var fs = require("fs");
 function main() {
     var args = process.argv.slice(2);
     if (args.length == 0) {
-        args = ["apple.js"];
+        args = ["analysis.js"];
     }
     var filePath = args[0];
     complexity(filePath);
@@ -127,10 +127,14 @@ function complexity(filePath) {
             var funcBody = node.body.body
             builder.MaxMessageChains = (function () {
                 var count = 0;
+                var max_count = 0;
                 for (let node of funcBody) {
-                    count += findMaxMessageChains(node);
+                    count = findMaxMessageChains(node);
+                    if (count > max_count) {
+                        max_count = count;
+                    }
                 }
-                return count;
+                return max_count;
             })();
             builder.Returns = (function () {
                 var count = 0;
