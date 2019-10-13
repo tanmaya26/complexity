@@ -43,8 +43,8 @@ function FunctionBuilder() {
                 "{0}(): {1}\n" +
                 "============\n" +
                 "MaxMessageChains: {2}\t" +
-                "Parameters: {3}\n" +
-                "SimpleCyclomaticComplexity: {4}\n" +
+                "Parameters: {3}\t" +
+                "SimpleCyclomaticComplexity: {4}\t" +
                 "Returns: {5}\n\n"
             )
                 .format(this.FunctionName, this.StartLine, this.MaxMessageChains, this.ParameterCount, this.SimpleCyclomaticComplexity, this.Returns)
