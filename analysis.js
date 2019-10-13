@@ -43,12 +43,11 @@ function FunctionBuilder() {
                 "{0}(): {1}\n" +
                 "============\n" +
                 "MaxMessageChains: {2}\t" +
-                "MaxConditions: {3}\t" +
-                "Parameters: {4}\n" +
+                "Parameters: {3}\t" +
+                "SimpleCyclomaticComplexity: {4}\t" +
                 "Returns: {5}\n\n"
             )
-                .format(this.FunctionName, this.StartLine, this.MaxMessageChains,
-                    this.MaxConditions, this.ParameterCount, this.Returns)
+                .format(this.FunctionName, this.StartLine, this.MaxMessageChains, this.ParameterCount, this.SimpleCyclomaticComplexity, this.Returns)
         );
     }
 };
@@ -128,10 +127,14 @@ function complexity(filePath) {
             var funcBody = node.body.body
             builder.MaxMessageChains = (function () {
                 var count = 0;
+                var max_count = 0;
                 for (let node of funcBody) {
-                    count += findMaxMessageChains(node);
+                    count = findMaxMessageChains(node);
+                    if (count > max_count) {
+                        max_count = count;
+                    }
                 }
-                return count;
+                return max_count;
             })();
             builder.Returns = (function () {
                 var count = 0;
@@ -285,7 +288,6 @@ function findImports(node) {
         }
     }
     return count;
-
 }
 
 // Helper function for counting children of node.
