@@ -200,7 +200,10 @@ function findComparisons(node) {
                 count += findComparisons(child);
             }
             else if (child === 'BinaryExpression') {
-                count++;
+                var op = node['operator'];
+                if (op === '<=' || op === '>=' || op === '<' || op === '>') {
+                    count++;
+                }
                 return count;
             }
             else if (child === 'BlockStatement') {
