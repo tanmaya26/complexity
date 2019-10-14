@@ -218,6 +218,31 @@ function findComparisons(node) {
 
 function findMaxMessageChains(node) {
     var count = 0;
+    var max_count = 0;
+    var key, child;
+    for (key in node) {
+        if (key !== 'range' && key !== 'loc' && key !== 'line') {
+            child = node[key];
+            if (child === 'ExpressionStatement') {
+                count = calculateChains(node['expression']);
+                if (count > max_count) {
+                    max_count = count;
+                }
+                return max_count;
+            }
+            if (typeof child === 'object' && child !== null && key != 'parent') {
+                count = findMaxMessageChains(child);
+                if (count > max_count) {
+                    max_count = count;
+                }
+            }
+        }
+    }
+    return max_count;
+}
+
+function calculateChains(node) {
+    var count = 0;
     var key, child;
     for (key in node) {
         if (key !== 'range' && key !== 'loc' && key !== 'line') {
@@ -226,7 +251,7 @@ function findMaxMessageChains(node) {
                 count++;
             }
             if (typeof child === 'object' && child !== null && key != 'parent') {
-                count += findMaxMessageChains(child);
+                count += calculateChains(child);
             }
         }
     }
